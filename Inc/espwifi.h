@@ -72,6 +72,32 @@ typedef enum
 	TRUE
 } bool;
 
+typedef enum
+{
+	ESP_DISABLE_DHCP,
+	ESP_ENABLE_DHCP
+}ESP_DHCP;
+
+typedef enum
+{
+	ESP_SoftAP,
+	ESP_Station,
+	ESP_SoftAP_Station
+}ESP_AP;
+
+typedef enum
+{
+	ESP_DISABLE_AUTO_CONNECT,
+	ESP_ENABLE_AUTO_CONNECT
+}AUTO_COONECT;
+
+typedef enum
+{
+	ESP_TOUCH=1,
+	ESP_AIRKISS,
+	ESP_BOTH
+}ESP_SMR_CONFIG;
+
 /*
  * Basic AT Commands
  */
@@ -93,5 +119,13 @@ ESP_CONNECTION CONNECT_TO_AP_SAVED(UART_HandleTypeDef, char*, char*,
 ESPWIFI_State ESP_DISCONNECT(UART_HandleTypeDef);
 bool ESP_CONFIGURE_SOFTAP_NOT_SAVED(UART_HandleTypeDef,char*, char*,
 		uint8_t channelID=8, uint8_t ecn=3);
+ESPWIFI_State ESP_ENABLE_DISABLE_DHCP_NOT_SAVED(UART_HandleTypeDef*, ESP_AP, ESP_DHCP);
+ESPWIFI_State ESP_ENABLE_DISABLE_DHCP_SAVED(UART_HandleTypeDef*, ESP_AP, ESP_DHCP);
+ESPWIFI_State ESP_AUTO_CONNECT(UART_HandleTypeDef*, AUTO_COONECT);
+ESPWIFI_State ESP_SMART_CONFIG(UART_HandleTypeDef*, ESP_SMR_CONFIG);
+ESPWIFI_State ESP_STOP_SMART_CONFIG(UART_HandleTypeDef*, ESP_SMR_CONFIG);
+/*
+ * TCP-IP AT Commands
+ */
 
 #endif /* INC_ESPWIFI_H_ */
