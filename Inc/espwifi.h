@@ -127,5 +127,7 @@ ESPWIFI_State ESP_STOP_SMART_CONFIG(UART_HandleTypeDef*, ESP_SMR_CONFIG);
 /*
  * TCP-IP AT Commands
  */
+ESPWIFI_State ESP_SEND_DATA(UART_HandleTypeDef* ,unsigned, const char* ,
+		unsigned short id=0);
 
 #endif /* INC_ESPWIFI_H_ */
