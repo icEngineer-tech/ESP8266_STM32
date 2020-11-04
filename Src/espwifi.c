@@ -7,27 +7,23 @@
 
 #include "espwifi.h"
 
-#include <string.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 
-UART_HandleTypeDef huart;
+
+
 
 /*
  * Basic AT Commands
  */
-ESPWIFI_State ESP_RESET(UART_HandleTypeDef huart)
+ESPWIFI_State ESP_RESET(UART_HandleTypeDef* huart)
 {
-	char rBuff[3];
-	HAL_USART_TransmitReceive(huart, (uint8_t*)"AT+RST",(uint8_t*)rBuff, 6, 200);
-	if(!strcmp(rBuff,"OK"))
-		return ESPWIFI_OK;
-	else
-		return ESPWIFI_ERROR;
+	char RxBuff[3];
+	HAL_UART_Transmit(huart, (uint8_t*)"AT+RST", 6, 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizef(RxBuff), 100);
+	return (!strcmp(RxBuff,"OK"))?ESPWIFI_OK:ESPWIFI_ERROR;
 }
 
-ESPWIFI_State ESP_UART_CONFIG(UART_HandleTypeDef huart,uint8_t BR, uint8_t DB, uint8_t SB,
+ESPWIFI_State ESP_UART_CONFIG(UART_HandleTypeDef* huart,uint8_t BR, uint8_t DB, uint8_t SB,
 		uint8_t p, uint8_t CF=0)
 {
 	char TxBuff[27]="AT+UART_CUR=";
@@ -35,31 +31,31 @@ ESPWIFI_State ESP_UART_CONFIG(UART_HandleTypeDef huart,uint8_t BR, uint8_t DB, u
 	char temp[14];
 	sprintf(temp,"%i,%i,%i,%i,%i",BR,BD,SB,p,CF);
 	strcat(TxBuff,temp);
-	HAL_USART_TransmitReceive(huart, (uint8_t*)TxBuff, RxBuff, sizeof(TxBuff), 200);
-	if(!strcmp(RxBuff,"OK"))
-		return ESPWIFI_OK;
-	else
-		return ESPWIFI_ERROR;
+	HAL_UART_Transmit(huart, (uint8_t*)TxBuff, (uint8_t*)RxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
+	return (!strcmp(RxBuff,"OK"))?ESPWIFI_OK:ESPWIFI_ERROR;
 }
 
-ESPWIFI_State ESP_SLEEP_MODE(UART_HandleTypeDef huart, uint8_t sm)
+ESPWIFI_State ESP_SLEEP_MODE(UART_HandleTypeDef* huart, uint8_t sm)
 {
 	char TxBuff[11]="AT+SLEEP=";
 	char RxBuff[3];
 	char temp[2];
 	sprintf(temp,"%i",sm);
 	strcat(TxBuff,temp);
-	HAL_USART_TransmitReceive(huart, TxBuff, RxBuff, sizeof(TxBuff), 200);
-	if(!strcmp(RxBuff,"OK"))
-		return ESPWIFI_OK;
-	else
-		return ESPWIFI_ERROR;
+	HAL_UART_Transmit(huart, (uint8_t*)TxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
+	return (!strcmp(RxBuff,"OK"))?ESPWIFI_OK:ESPWIFI_ERROR;
 }
 
-char* ESP_REMAING_SPACE_RAM(UART_HandleTypeDef huart)
+char* ESP_REMAING_SPACE_RAM(UART_HandleTypeDef* huart)
 {
 	char RxBuff[14];
-	HAL_USART_TransmitReceive(huart, (uint8_t*)"AT+SYSRAM?", RxBuff, 11, 200);
+	HAL_USART_TransmitReceive(huart, (uint8_t*)"AT+SYSRAM?", 11, 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
 	return RxBuff;
 }
 
@@ -68,45 +64,46 @@ char* ESP_REMAING_SPACE_RAM(UART_HandleTypeDef huart)
  * Wi-Fi AT Commands
  */
 
-ESPWIFI_State SET_WIFI_MODE_NOT_SAVED(UART_HandleTypeDef huart, uint8_t curm)
+ESPWIFI_State SET_WIFI_MODE_NOT_SAVED(UART_HandleTypeDef* huart, uint8_t* curm)
 {
-	if(curm<1 || curm>3)
+	if(*curm<1 || *curm>3)
 		return ESPWIFI_ERROR;
-	char TxBuff[11]="AT+CWMODE_CUR=";
+	char TxBuff[20]="AT+CWMODE_CUR=";
 	char RxBuff[3];
 	char temp[2];
-	sprintf(temp,"%i",curm);
+	sprintf(temp,"%i",*curm);
 	strcat(TxBuff,temp);
-	HAL_USART_TransmitReceive(huart, TxBuff, RxBuff, sizeof(TxBuff), 200);
-	if(!strcmp(RxBuff,"OK"))
-		return ESPWIFI_OK;
-	else
-		return ESPWIFI_ERROR;
+	HAL_UART_Transmit(huart, (uint8_t*)TxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
+	return (!strcmp(RxBuff,"OK"))?ESPWIFI_OK:ESPWIFI_ERROR;
 }
-ESPWIFI_State SET_WIFI_MODE_SAVED(UART_HandleTypeDef huart, uint8_t mode)
+ESPWIFI_State SET_WIFI_MODE_SAVED(UART_HandleTypeDef* huart, uint8_t* mode)
 {
-	if(mode<1 || mode>3)
+	if(*mode<1 || *mode>3)
 			return ESPWIFI_ERROR;
-	char TxBuff[11]="AT+CWMODE_DEF=";
+	char TxBuff[18]="AT+CWMODE_DEF=";
 	char RxBuff[3];
 	char temp[2];
-	sprintf(temp,"%i",curm);
+	sprintf(temp,"%i",*mode);
 	strcat(TxBuff,temp);
-	HAL_USART_TransmitReceive(huart, TxBuff, RxBuff, sizeof(TxBuff), 200);
-	if(!strcmp(RxBuff,"OK"))
-		return ESPWIFI_OK;
-	else
-		return ESPWIFI_ERROR;
+	HAL_UART_Transmit(huart, (uint8_t*)TxBuff,  sizeof(TxBuff), 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
+	return (!strcmp(RxBuff,"OK"))?ESPWIFI_OK:ESPWIFI_ERROR;
 }
 
-ESP_CONNECTION CONNECT_TO_AP_NOT_SAVED(UART_HandleTypeDef huart, char* SSID, char* PASSWORD,
+ESP_CONNECTION CONNECT_TO_AP_NOT_SAVED(UART_HandleTypeDef* huart, char* SSID, char* PASSWORD,
 		char* BSSID=NULL, char* PCI_EN=NULL)
 {
 	char TxBuff[11]="AT+CWJAP_CUR=";
 	char RxBuff[3];
 	char temp[80];
 	sprintf(temp,"%s,%s,%s,%s",SSID,PASSWORD,BSSID,PCI_EN);
-	HAL_USART_TransmitReceive(huart, TxBuff, RxBuff, sizeof(TxBuff), 200);
+	strcat(TxBuff,temp);
+	HAL_UART_Transmit(huart, (uint8_t*)TxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
 	if(!strcmp(RxBuff,"OK"))
 		return (ESP_OK,ESPWIFI_OK);
 	else
@@ -127,14 +124,17 @@ ESP_CONNECTION CONNECT_TO_AP_NOT_SAVED(UART_HandleTypeDef huart, char* SSID, cha
 		}
 	}
 }
-ESP_CONNECTION CONNECT_TO_AP_SAVED(UART_HandleTypeDef huart, char* SSID, char* PASSWORD,
+ESP_CONNECTION CONNECT_TO_AP_SAVED(UART_HandleTypeDef* huart, char* SSID, char* PASSWORD,
 		char* BSSID=NULL, char* PCI_EN=NULL)
 {
 	char TxBuff[11]="AT+CWJAP_DEF=";
 	char RxBuff[3];
 	char temp[80];
 	sprintf(temp,"%s,%s,%s,%s",SSID,PASSWORD,BSSID,PCI_EN);
-	HAL_USART_TransmitReceive(huart, TxBuff, RxBuff, sizeof(TxBuff), 200);
+	strcat(TxBuff,temp);
+	HAL_UART_Transmit(huart, (uint8_t*)TxBuff, (uint8_t*)RxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
 	if(!strcmp(RxBuff,"OK"))
 		return (ESP_OK,ESPWIFI_OK);
 	else
@@ -157,17 +157,16 @@ ESP_CONNECTION CONNECT_TO_AP_SAVED(UART_HandleTypeDef huart, char* SSID, char* P
 }
 
 
-ESPWIFI_State ESP_DISCONNECT(UART_HandleTypeDef huart)
+ESPWIFI_State ESP_DISCONNECT(UART_HandleTypeDef* huart)
 {
 	char RxBuff[3];
-	HAL_USART_TransmitReceive(huart, (uint8_t*)"AT+CWQAP", RxBuff, 8, 200);
-	if(!strcmp(RxBuff,"OK"))
-		return ESPWIFI_OK;
-	else
-		return ESPWIFI_ERROR;
+	HAL_UART_Transmit(huart, (uint8_t*)"AT+CWQAP", 8, 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart,  (uint8_t*)RxBuff, sizeof(RxBuff), 100);
+	return (!strcmp(RxBuff,"OK"))?ESPWIFI_OK:ESPWIFI_ERROR;
 }
 
-bool ESP_CONFIGURE_SOFTAP_NOT_SAVED(UART_HandleTypeDef huart,char* SSID, char* PASS,
+bool ESP_CONFIGURE_SOFTAP_NOT_SAVED(UART_HandleTypeDef* huart,char* SSID, char* PASS,
 		uint8_t channelID=8, uint8_t ecn=3)
 {
 	if(channelID>14 || channelID<1)
@@ -178,13 +177,13 @@ bool ESP_CONFIGURE_SOFTAP_NOT_SAVED(UART_HandleTypeDef huart,char* SSID, char* P
 	char RxBuff[3];
 	char temp[80];
 	sprintf(temp,"%s,%s,%i,%i",SSID,PASSWORD,channelID,ecn);
-	HAL_USART_TransmitReceive(huart, TxBuff, RxBuff, sizeof(TxBuff), 200);
-	if(!strcmp(RxBuff,"OK"))
-		return TRUE;
-	else
-		return FALSE;
+	strcat(TxBuff,temp);
+	HAL_UART_Transmit(huart, (uint8_t*)TxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
+	return (!strcmp(RxBuff,"OK"))? TRUE:FALSE;
 }
-bool ESP_CONFIGURE_SOFTAP_SAVED(UART_HandleTypeDef huart,char* SSID, char* PASS,
+bool ESP_CONFIGURE_SOFTAP_SAVED(UART_HandleTypeDef* huart,char* SSID, char* PASS,
 		uint8_t channelID=8, uint8_t ecn=3)
 {
 	if(channelID>14 || channelID<1)
@@ -195,32 +194,36 @@ bool ESP_CONFIGURE_SOFTAP_SAVED(UART_HandleTypeDef huart,char* SSID, char* PASS,
 	char RxBuff[3];
 	char temp[80];
 	sprintf(temp,"%s,%s,%i,%i",SSID,PASSWORD,channelID,ecn);
-	HAL_USART_TransmitReceive(huart, TxBuff, RxBuff, sizeof(TxBuff), 200);
-	if(!strcmp(RxBuff,"OK"))
-		return TRUE;
-	else
-		return FALSE;
+	strcat(TxBuff,temp);
+	HAL_UART_Transmit(huart, (uint8_t*)TxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
+	return (!strcmp(RxBuff,"OK"))? TRUE:FALSE;
 }
 
 ESPWIFI_State ESP_ENABLE_DISABLE_DHCP_NOT_SAVED(UART_HandleTypeDef* huart, ESP_AP mode, ESP_DHCP en)
 {
-	char TxBuff[11]="AT+CWDHCP_CUR=";
+	char TxBuff[20]="AT+CWDHCP_CUR=";
 	char RxBuff[3];
 	char temp[3];
-	sprintf(temp,"%i,%i\0",mode,en);
+	sprintf(temp,"%i,%i",mode,en);
 	strcat(TxBuff,temp);
-	HAL_USART_TransmitReceive(huart, (uint8_t*)TxBuff, (uint8_t*)RxBuff, Size, 200);
+	HAL_UART_Transmit(huart, (uint8_t*)TxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart,(uint8_t*)RxBuff, sizeof(RxBuff), 100);
 	return (!strcmp(RxBuff,"OK"))? ESPWIFI_OK:ESPWIFI_ERROR;
 }
 
 ESPWIFI_State ESP_ENABLE_DISABLE_DHCP_SAVED(UART_HandleTypeDef* huart, ESP_AP mode, ESP_DHCP en)
 {
-	char TxBuff[11]="AT+CWDHCP_DEF=";
+	char TxBuff[20]="AT+CWDHCP_DEF=";
 	char RxBuff[3];
 	char temp[3];
-	sprintf(temp,"%i,%i\0",mode,en);
+	sprintf(temp,"%i,%i",mode,en);
 	strcat(TxBuff,temp);
-	HAL_USART_TransmitReceive(huart, (uint8_t*)TxBuff, (uint8_t*)RxBuff, sizeof(TxBuff), 200);
+	HAL_UART_Transmit(huart, (uint8_t*)TxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
 	return (!strcmp(RxBuff,"OK"))? ESPWIFI_OK:ESPWIFI_ERROR;
 }
 
@@ -229,9 +232,11 @@ ESPWIFI_State ESP_AUTO_CONNECT(UART_HandleTypeDef* huart, AUTO_COONECT conf)
 	char TxBuff[17]="AT+CWAUTOCONN=";
 	char RxBuff[3];
 	char temp[3];
-	sprintf(temp,"%i\0",conf);
+	sprintf(temp,"%i",conf);
 	strcat(TxBuff,temp);
-	HAL_USART_TransmitReceive(huart, (uint8_t*)TxBuff, (uint8_t*)RxBuff, sizeof(TxBuff), 200);
+	HAL_UART_Transmit(huart, (uint8_t*)TxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
 	return (!strcmp(RxBuff,"OK"))? ESPWIFI_OK:ESPWIFI_ERROR;
 }
 
@@ -240,19 +245,69 @@ ESPWIFI_State ESP_SMART_CONFIG(UART_HandleTypeDef* huart, ESP_SMR_CONFIG smart)
 	char TxBuff[20]="AT+CWSTARTSMART=";
 	char RxBuff[3];
 	char temp[3];
-	sprintf(temp,"%i\0",smart);
+	sprintf(temp,"%i",smart);
 	strcat(TxBuff,temp);
-	HAL_USART_TransmitReceive(huart, (uint8_t*)TxBuff, (uint8_t*)RxBuff, sizeof(TxBuff), 200);
+	HAL_UART_Transmit(huart, (uint8_t*)TxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
 	return (!strcmp(RxBuff,"OK"))? ESPWIFI_OK:ESPWIFI_ERROR;
 }
 
 ESPWIFI_State ESP_STOP_SMART_CONFIG(UART_HandleTypeDef* huart, ESP_SMR_CONFIG smart)
 {
 	char RxBuff[3];
-	HAL_USART_TransmitReceive(huart, (uint8_t*)"AT+CWSTOPSMART=", (uint8_t*)RxBuff, 16, 200);
+	HAL_UART_Transmit(huart, (uint8_t*)"AT+CWSTOPSMART=", 16, 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
 	return (!strcmp(RxBuff,"OK"))? ESPWIFI_OK:ESPWIFI_ERROR;
 }
 
+ESPWIFI_State ESP_CONFIGURE_NAME_HOST_STATION(UART_HandleTypeDef* huart, char* hostname)
+{
+	const char* Command="AT+CWHOSTNAME=";
+	char RxBuff[3];
+	char* TxBuff = (char*)malloc(sizeof(char)*(strlen(hostname)+strlen(Command)));
+	strcpy(TxBuff,Command);
+	strcat(TxBuff,hostname);
+	HAL_UART_Transmit(huart, (uint8_t*)TxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(100);
+	HAL_UART_Receive(huart,(uint8_t*)RxBuff, sizeof(RxBuff), 100);
+	free(TxBuff);
+	return (!strcmp(RxBuff,"OK"))? ESPWIFI_OK:ESPWIFI_ERROR;
+}
 /*
  * TCP-IP AT Commands
  */
+
+/*
+ * the best call of this function to use the sizeof data as length
+ */
+ESPWIFI_State ESP_SEND_DATA(UART_HandleTypeDef* huart,unsigned length, const char* data ,
+		unsigned short id=0)
+{
+	const char* TxBuff="AT+CIPSEND=";
+	if(lentgh>2048)
+		return ESPWIFI_ERROR;
+
+	if(!id)
+	{
+		char temp[2];
+		sprintf(temp,"%i",lenght);
+		strcat(TxBuff,temp);
+	}
+	else
+	{
+		char temp[4];
+		sprintf(temp,"%i,%i",id, lenght);
+		strcat(TxBuff,temp);
+	}
+	char RxBuff[8];
+	HAL_UART_Transmit(huart, TxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(50);
+	HAL_UART_Transmit(huart, (uint8_t*)data, sizeof(data), 200);
+	HAL_Delay(100);
+	if(len<strlen(data)*sizeof(char))
+		return ESPWIFI_BUSY;
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
+	return (!strcmp(RxBuff,"OK"))? ESPWIFI_OK:ESPWIFI_FAIL;
+}
