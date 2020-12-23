@@ -9,7 +9,14 @@
  * 1/ to activate the SoftAP Mode:
  *
  */
+/*
+ * includes
+ */
 #include "wifi.h"
+
+/*
+ * macros
+ */
 #define huart huart3
 
 uint8_t mode;
@@ -22,6 +29,10 @@ bool WiFi_reset()
 		return FALSE;
 }
 
+/*
+ * params: type=0 --> Set wifi not saved
+ * 		   type=1 --> set wifi saved
+ */
 bool WiFi_Mode(unsigned type, uint8_t mode)
 {
 	if (type>1 || type<0)
@@ -47,7 +58,7 @@ bool WiFi_Configure_Hostname_Station(char* hostname)
 	return res;
 }
 
-ESPWIFI_State Wifi_Send_Data(unsigned length, const char* data, unsigned short id=0)
+ESPWIFI_State Wifi_Send_Data(unsigned length, const char* data)//, unsigned short id=0)
 {
-	return ESP_SEND_DATA(huart, length, data, id);
+	return ESP_SEND_DATA(huart, length, data);//, id);
 }
