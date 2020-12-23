@@ -5,8 +5,10 @@
  *      Author: idriss
  */
 
+/*
+ * includes
+ */
 #include "espwifi.h"
-
 
 
 
@@ -282,25 +284,24 @@ ESPWIFI_State ESP_CONFIGURE_NAME_HOST_STATION(UART_HandleTypeDef* huart, char* h
 /*
  * the best call of this function to use the sizeof data as length
  */
-ESPWIFI_State ESP_SEND_DATA(UART_HandleTypeDef* huart,unsigned length, const char* data ,
-		unsigned short id=0)
+ESPWIFI_State ESP_SEND_DATA(UART_HandleTypeDef* huart,unsigned length, const char* data)
+		//unsigned short id=0)
 {
 	const char* TxBuff="AT+CIPSEND=";
-	if(lentgh>2048)
-		return ESPWIFI_ERROR;
+	//if(lentgh>2048)
+	//	return ESPWIFI_ERROR;
 
-	if(!id)
-	{
-		char temp[2];
-		sprintf(temp,"%i",lenght);
-		strcat(TxBuff,temp);
-	}
-	else
+
+	char* temp;
+	sprintf(temp,"%i",lenght);
+	strcat(TxBuff,temp);
+	free(temp);
+	/*else
 	{
 		char temp[4];
 		sprintf(temp,"%i,%i",id, lenght);
 		strcat(TxBuff,temp);
-	}
+	}*/
 	char RxBuff[8];
 	HAL_UART_Transmit(huart, TxBuff, sizeof(TxBuff), 100);
 	HAL_Delay(50);
@@ -310,4 +311,78 @@ ESPWIFI_State ESP_SEND_DATA(UART_HandleTypeDef* huart,unsigned length, const cha
 		return ESPWIFI_BUSY;
 	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
 	return (!strcmp(RxBuff,"OK"))? ESPWIFI_OK:ESPWIFI_FAIL;
+}
+
+ESPWIFI_State Get_The_Local_IP_ADDR(UART_HandleTypeDef* huart)
+{
+	const char* TxBuff="AT+CIFSR";
+	char RxBuff[100];
+	HAL_UART_Transmit(huart, TxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(50);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
+	HAL_Delay(100);
+}
+
+/*
+ * params: mode=0 --> single connection
+ * 		   mode=1 --> multiple connection
+ * return: ESP_OK if the query has been executed successfully
+ */
+__weak ESPWIFI_State En_Dis_Multiple_Conn(UART_HandleTypeDef* huart, bool mode)
+{
+	const char* TxBuff= mode? "AT+CIPMUX=1":"AT+CIPMUX=0";
+	char RxBuff[3];
+	HAL_UART_Transmit(huart, TxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(50);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
+	HAL_Delay(100);
+	return (!strcmp(RxBuff,"OK"))? ESPWIFI_OK:ESPWIFI_ERROR;
+}
+ESPWIFI_State Create_Del_TCP_Server(UART_HandleTypeDef* huart, bool mode, unsigned short port=333)
+{
+	const char* TxBuff= mode? "AT+CIPSERVER=1":"AT+CIPSERVER=0";
+	char* temp;
+	char RxBuff[3];
+	sprintf(temp,"%i",port);
+	strcat(TxBuff, temp);
+	free(temp);
+	HAL_UART_Transmit(huart, TxBuff, sizeof(TxBuff), 100);
+	HAL_Delay(50);
+	HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
+	HAL_Delay(100);
+	return (!strcmp(RxBuff,"OK"))? ESPWIFI_OK:ESPWIFI_ERROR;
+}
+/*
+ * you should call this function before calling Create_Del_TCP_Server() function
+ */
+ESPWIFI_State Set_Max_Conn_Allowed_by_Server(UART_HandleTypeDef* huart, bool mode,\
+		unsigned short num=1, unsigned short port=333)
+{
+	if(En_Dis_Multiple_Conn(huart,mode) != ESP_OK)
+		return ESP_CONNECTION_FAILED;
+	if(num<1 || num>5)
+#error please verify the number of connection
+		return ESP_CONNECTION_FAILED;
+	if(mode==FALSE)
+	{
+		const char* TxBuff= "AT+CIPSERVERMAXCONN=1";
+		char RxBuff[3];
+		HAL_UART_Transmit(huart, TxBuff, sizeof(TxBuff), 100);
+		HAL_Delay(50);
+		HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
+		HAL_Delay(100);
+	}
+	else
+	{
+		const char* TxBuff= "AT+CIPSERVERMAXCONN=";
+		char RxBuff[3];
+		sprintf(temp,"%i",num);
+		strcat(TxBuff,temp);
+		free(temp);
+		HAL_UART_Transmit(huart, TxBuff, sizeof(TxBuff), 100);
+		HAL_Delay(50);
+		HAL_UART_Receive(huart, (uint8_t*)RxBuff, sizeof(RxBuff), 100);
+		HAL_Delay(100);
+	}
+	return (!strcmp(RxBuff,"OK"))? ESPWIFI_OK:ESPWIFI_ERROR;
 }
